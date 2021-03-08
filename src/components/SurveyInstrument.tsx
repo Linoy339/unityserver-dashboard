@@ -20,7 +20,7 @@ import {
   Grid,
   Drawer,
   Toolbar,
-  Slider,
+ // Slider,
   Menu,
   MenuItem,
   ListItemText,
@@ -44,6 +44,9 @@ import { useSnackbar } from "notistack"
 import Messages from "./Messages"
 import classes from "*.module.css"
 import { useTranslation } from "react-i18next"
+import { Slider } from 'antd'
+import './css/antd.css';
+
 
 const GreenCheckbox = withStyles({
   root: {
@@ -194,7 +197,13 @@ const useStyles = makeStyles((theme) => ({
       },
     },
   },
-  slider: { width: "80%", color: "#2F9D7E" },
+  slider: {
+    width: "95%",
+    color: "#2F9D7E",
+    [theme.breakpoints.down("xs")]: {
+      width: "82%",
+    },
+  },
 
   btnBack: {
     borderRadius: "40px",
@@ -320,14 +329,14 @@ const useStyles = makeStyles((theme) => ({
     "& span.Mui-checked": { color: "#2F9D7E !important" },
   },
   sliderValueLabel: {
-    width: "calc(100% + 105px)",
-    marginLeft: "-50px",
+    width: "100%",
   },
   lightGray: { color: "#999", fontSize: "0.75rem" },
   mxSmall: { margin: "0 6px" },
   radioLabelText: { lineHeight: "16px" },
 
   mrgBtm: { marginBottom: 15 },
+  countlabel: { left: "calc(-50% - -8px)" },
 }))
 
 // Splice together all selected activities & their tags.
@@ -669,6 +678,8 @@ function RadioRating({ onChange, options, value, ...props }) {
 
 function Rating({ onChange, options, value, ...props }) {
   const classes = useStyles()
+  const [values, setValues] = useState(JSON.parse(JSON.stringify(options)))
+  const [reverse, setReverse] = useState(false)
   const getText = (val) => {
     let sliderValue =
       !!options[0].description && options[0].description.trim().length > 0 ? options[0].description : options[0].value
@@ -682,22 +693,31 @@ function Rating({ onChange, options, value, ...props }) {
 
   const { t } = useTranslation()
 
-  const [valueText, setValueText] = useState(
-    !!value
-      ? getText(value)
-      : !!options[0].description && options[0].description.trim().length > 0
-      ? options[0].description
-      : options[0].value
-  )
+  const [valueText, setValueText] = useState(null)
   const [sliderValue, setSliderValue] = useState(!!value ? value : parseInt(options[0].value))
 
   useEffect(() => {
-    onChange(sliderValue)
+    if(parseInt(options[options.length - 1].value) < parseInt(options[0].value)) {
+      values.sort((a, b) => parseInt(a.value) - parseInt(b.value))
+      setValues(values)
+      setReverse(parseInt(options[options.length - 1].value) > parseInt(options[0].value) ? false : true)
+    } 
+    setValueText(
+      !!value
+        ? getText(value)
+        : !!options[0].description && options[0].description.trim().length > 0
+        ? options[0].description
+        : options[0].value)
   }, [])
+
+  useEffect(() => {
+    onChange(sliderValue)
+  }, [sliderValue])
 
   const valuetext = (value: number) => {
     return `${options[value]}`
   }
+
   const getSliderValue = (val) => {
     let sliderValue =
       !!options[0].description && options[0].description.trim().length > 0 ? options[0].description : options[0].value
@@ -712,51 +732,29 @@ function Rating({ onChange, options, value, ...props }) {
     onChange(val)
     return sliderValue
   }
+  
   return (
     <Box textAlign="center" mt={5}>
       <Slider
-        defaultValue={sliderValue}
-        value={sliderValue}
-        getAriaValueText={valuetext}
-        aria-labelledby="discrete-slider"
-        valueLabelDisplay="auto"
-        step={
-          parseInt(options[0].value) < 0 && parseInt(options[1].value) < 0
-            ? Math.abs(parseInt(options[0].value)) + parseInt(options[1].value)
-            : parseInt(options[0].value) < 0 && parseInt(options[1].value) > 0
-            ? Math.abs(parseInt(options[0].value)) - parseInt(options[1].value)
-            : parseInt(options[1].value) - parseInt(options[0].value)
-        }
-        marks={options}
-        min={parseInt(options[0].value)}
-        max={parseInt(options[options.length - 1].value)}
-        track={false}
-        classes={{
-          root: classes.slider,
-          rail: classes.centerBar,
-          mark: classes.customTrack,
-          thumb: classes.customThumb,
-        }}
-        onChange={(evt, val) => {
-          getSliderValue(val)
-        }}
-      />
-      <Grid
-        container
-        spacing={1}
-        className={classes.sliderValueLabel}
-        direction="row"
-        justify="center"
-        alignItems="center"
-      >
-        <Grid item xs={4}>
+          defaultValue={sliderValue}
+          value={sliderValue}
+          reverse={reverse}
+          min={parseInt(values[0].value)}
+          max={parseInt(values[options.length - 1].value)}
+          dots={true}
+          onChange={(val) => {
+            getSliderValue(val)
+          }}
+      />      
+      <Grid container className={classes.sliderValueLabel} direction="row" justify="space-between" alignItems="center">
+        <Grid item>
           <Typography variant="caption" className={classes.textCaption} display="block" gutterBottom>
             {!!options[0].description && options[0].description.trim().length === 0
               ? options[0].value
               : options[0].description}
           </Typography>
         </Grid>
-        <Grid item xs={4}>
+        <Grid item>
           {options.length > 2 && (
             <Typography variant="caption" className={classes.textCaption} display="block" gutterBottom>
               {!!options[Math.ceil(options.length / 2) - 1].description &&
@@ -766,7 +764,7 @@ function Rating({ onChange, options, value, ...props }) {
             </Typography>
           )}
         </Grid>
-        <Grid item xs={4}>
+        <Grid item>
           <Typography variant="caption" className={classes.textCaption} display="block" gutterBottom>
             {!!options[options.length - 1].description && options[options.length - 1].description.trim().length === 0
               ? options[options.length - 1].value
@@ -880,7 +878,7 @@ function Question({ onResponse, number, text, desc, type, options, value, startT
   ]
   switch (type) {
     case "slider":
-      options = options.sort((a, b) => parseInt(a.value) - parseInt(b.value))
+      //options = options.sort((a, b) => parseInt(a.value) - parseInt(b.value))
       component = <Rating options={options} onChange={onChange} value={!!value ? value.value : undefined} />
       break
     case "rating":
