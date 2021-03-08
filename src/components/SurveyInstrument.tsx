@@ -741,11 +741,21 @@ function Rating({ onChange, options, value, ...props }) {
           reverse={reverse}
           min={parseInt(values[0].value)}
           max={parseInt(values[options.length - 1].value)}
+         // marks={options.map((option) => {return option.value})}
           dots={true}
           onChange={(val) => {
             getSliderValue(val)
           }}
-      />      
+      />  
+      <Grid container className={classes.sliderValueLabel} direction="row" justify="space-between" alignItems="center">
+        {options.map((option) => (
+        <Grid item>
+          <Typography variant="caption" className={classes.textCaption} display="block" gutterBottom>
+            {option.value}
+          </Typography>
+        </Grid>
+        ))}
+      </Grid>    
       <Grid container className={classes.sliderValueLabel} direction="row" justify="space-between" alignItems="center">
         <Grid item>
           <Typography variant="caption" className={classes.textCaption} display="block" gutterBottom>
